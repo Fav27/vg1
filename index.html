@@ -1,0 +1,55 @@
+from flask import Flask, render_template_string, request
+
+app = Flask(__name__)
+
+HTML_TEMPLATE = """
+<!doctype html>
+<title>Vigenère Cipher</title>
+<h2>Vigenère Cipher</h2>
+<form method="post">
+    <label>Teks: <input type="text" name="text" value="{{ text }}"></label><br><br>
+    <label>Kunci: <input type="text" name="key" value="{{ key }}"></label><br><br>
+    <label>Mode:
+        <select name="mode">
+            <option value="encrypt" {% if mode == 'encrypt' %}selected{% endif %}>Enkripsi</option>
+            <option value="decrypt" {% if mode == 'decrypt' %}selected{% endif %}>Dekripsi</option>
+        </select>
+    </label><br><br>
+    <input type="submit" value="Proses">
+</form>
+{% if result is not none %}
+    <h3>Hasil: {{ result }}</h3>
+{% endif %}
+"""
+
+def vigenere(text, key, mode):
+    result = ""
+    key = key.upper().replace(" ", "")
+    key_index = 0
+
+    for char in text:
+        if char.isalpha():
+            shift = ord(key[key_index % len(key)]) - ord('A')
+            base = ord('A') if char.isupper() else ord('a')
+            if mode == "encrypt":
+                result += chr((ord(char) - base + shift) % 26 + base)
+            else:
+                result += chr((ord(char) - base - shift + 26) % 26 + base)
+            key_index += 1
+        else:
+            result += char
+    return result
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    text = key = result = ""
+    mode = "encrypt"
+    if request.method == "POST":
+        text = request.form["text"]
+        key = request.form["key"]
+        mode = request.form["mode"]
+        result = vigenere(text, key, mode)
+    return render_template_string(HTML_TEMPLATE, text=text, key=key, mode=mode, result=result)
+
+if __name__ == "__main__":
+    app.run(debug=True)
